@@ -1,9 +1,7 @@
 const fs = require('fs');
+const fsPromises = require('fs').promises;
 const path = require('path');
 
-const headerPath = path.join(__dirname, 'components\\', 'header.html');
-const articlesPath = path.join(__dirname, 'components\\', 'articles.html');
-const footerPath = path.join(__dirname, 'components\\', 'footer.html');
 const indexPath = path.join(__dirname, 'project-dist\\', 'index.html');
 const templatePath = path.join(__dirname, 'template.html');
 const projectDistPath = path.join(__dirname, 'project-dist');
@@ -12,48 +10,61 @@ const stylesDistPath = path.join(__dirname, 'project-dist\\', 'style.css');
 const assetsDistPath = path.join(__dirname, 'project-dist\\', 'assets');
 const assetsSourcePath = path.join(__dirname, 'assets');
 
-fs.rm(projectDistPath, { recursive:true }, (err) => {
-  if(err){
-    return;
+async function removeDist(path) {
+  const folderExists = await fsPromises.access(path)
+    .then(() => true)
+    .catch(() => false);
+
+  if (folderExists) {
+    const files = await fsPromises.readdir(path);
+
+    await Promise.all(files.map(async (file) => {
+      const currentPath = path + '/' + file;
+      const isDirectory = await fsPromises.stat(currentPath).then(stat => stat.isDirectory());
+
+      if (isDirectory) {
+        await removeDist(currentPath);
+      } else {
+        await fsPromises.unlink(currentPath);
+      }
+    }));
+
+    await fsPromises.rmdir(path);
   }
-});
+}
 
-fs.mkdir(projectDistPath, (err) => {
- 
-  fs.readFile(templatePath, 'utf8', (err, template) => {
-    if (err) throw err;
+async function mergeIndex() {
+  fs.mkdir(projectDistPath, (err) => {
 
-  fs.readFile(headerPath, 'utf8', (err, header) => {
-    if (err) throw err;
+    fs.readFile(templatePath, 'utf8', (err, template) => {
+      if (err) throw err;
 
-      template = template.replace('{{header}}', header);
-
-      fs.readFile(articlesPath, 'utf8', (err, articles) => {
+      fs.readdir(path.join(__dirname, 'components'), (err, files) => {
         if (err) throw err;
+        let count = files.length;
+        files.forEach((file) => {
+          const sectionTag = `{{${path.basename(file, '.html')}}}`;
+          const sectionPath = path.join(__dirname, 'components', file);
 
-        template = template.replace('{{articles}}', articles);
-
-        fs.readFile(footerPath, 'utf8', (err, footer) => {
-          if (err) throw err;
-
-          template = template.replace('{{footer}}', footer);
-
-          fs.writeFile(indexPath, template, (err) => {
+          fs.readFile(sectionPath, 'utf8', (err, sectionContent) => {
             if (err) throw err;
+
+            template = template.replace(sectionTag, sectionContent);
+            count--;
+            if (count === 0) {
+              fs.writeFile(indexPath, template, (err) => {
+                if (err) throw err;
+              });
+            }
           });
         });
       });
     });
   });
-});
+}
 
-const writeStream = fs.createWriteStream(stylesDistPath);
-
-fs.unlink(stylesDistPath, (err) => {
-  mergeStyles();
-});
-
-function mergeStyles() {
+async function mergeStyles() {
+  const writeStream = fs.createWriteStream(stylesDistPath);
   fs.readdir(stylesDirPath, (err, files) => {
     if (err) {
       console.error(err);
@@ -87,10 +98,16 @@ async function copyDirectory(source, destination) {
   }
 }
 
-fs.rm(assetsDistPath, { recursive:true }, (err) => {
-  if(err){
-    return;
+async function runTasks() {
+  try {
+    await removeDist(projectDistPath);
+    await mergeIndex();
+    await mergeStyles();
+    await copyDirectory(assetsSourcePath, assetsDistPath);
+    console.log('All tasks completed');
+  } catch (err) {
+    console.error('Error:', err);
   }
-});
+}
 
-copyDirectory(assetsSourcePath, assetsDistPath);
+runTasks();
