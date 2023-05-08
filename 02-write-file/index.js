@@ -9,6 +9,10 @@ const read = readline.createInterface({
   output: process.stdout
 });
 
+fs.writeFile(filePath, '', (err) => {
+  if (err) throw err;
+});
+
 read.on('SIGINT', () => {
   console.log('\nПолучена команда завершения');
   read.close();
