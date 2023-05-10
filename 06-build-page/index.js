@@ -2,12 +2,12 @@ const fs = require('fs');
 const fsPromises = require('fs').promises;
 const path = require('path');
 
-const indexPath = path.join(__dirname, 'project-dist\\', 'index.html');
+const indexPath = path.join(__dirname, 'project-dist', 'index.html');
 const templatePath = path.join(__dirname, 'template.html');
 const projectDistPath = path.join(__dirname, 'project-dist');
 const stylesDirPath = path.join(__dirname, 'styles');
-const stylesDistPath = path.join(__dirname, 'project-dist\\', 'style.css');
-const assetsDistPath = path.join(__dirname, 'project-dist\\', 'assets');
+const stylesDistPath = path.join(__dirname, 'project-dist', 'style.css');
+const assetsDistPath = path.join(__dirname, 'project-dist', 'assets');
 const assetsSourcePath = path.join(__dirname, 'assets');
 
 async function removeDist(path) {
