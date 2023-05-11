@@ -19,7 +19,7 @@ fs.readdir(secretFolderPath, (err, files) => {
       if (stats.isFile()) {
         const fileSizeKb = stats.size / 1024;
         const fileExt = path.extname(file).substring(1);
-        console.log(`${file} - ${fileExt} - ${fileSizeKb.toFixed(3)}kb`);
+        console.log(`${path.parse(file).name} - ${fileExt} - ${fileSizeKb.toFixed(3)}kb`);
       }
     });
   });
